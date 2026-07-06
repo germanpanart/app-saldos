@@ -48,7 +48,7 @@ export default function Dashboard({ ocs, canEdit }) {
     setExportErr('');
     try {
       const { exportPDF, exportDOCX } = await import('@/lib/report.js');
-      if (kind === 'pdf') exportPDF(filtered, txt);
+      if (kind === 'pdf') await exportPDF(filtered, txt);
       else await exportDOCX(filtered, txt);
     } catch (e) {
       console.error(e);
