@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileDown, FileText, RefreshCw, Plus } from 'lucide-react';
-import { exportPDF, exportDOCX } from '@/lib/report.js';
 import Kpis from './Kpis.jsx';
 import Filters, { filtersTxt } from './Filters.jsx';
 import Charts from './Charts.jsx';
@@ -15,6 +14,7 @@ export default function Dashboard({ ocs, canEdit }) {
   const router = useRouter();
   const [filters, setFilters] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
+  const [exportErr, setExportErr] = useState('');
 
   const facets = useMemo(() => ({
     tipos: [...new Set(ocs.map((o) => o.tipo))].sort(),
@@ -45,8 +45,17 @@ export default function Dashboard({ ocs, canEdit }) {
   const txt = filtersTxt(filters);
   const doExport = async (kind) => {
     setBusy(true);
-    try { if (kind === 'pdf') exportPDF(filtered, txt); else await exportDOCX(filtered, txt); }
-    finally { setBusy(false); }
+    setExportErr('');
+    try {
+      const { exportPDF, exportDOCX } = await import('@/lib/report.js');
+      if (kind === 'pdf') exportPDF(filtered, txt);
+      else await exportDOCX(filtered, txt);
+    } catch (e) {
+      console.error(e);
+      setExportErr(e?.message || 'No se pudo generar el informe.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -64,6 +73,12 @@ export default function Dashboard({ ocs, canEdit }) {
           <button onClick={() => router.refresh()} title="Recargar" className="inline-flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 px-3 py-2 rounded-lg text-sm text-slate-700"><RefreshCw size={16} /></button>
         </div>
       </div>
+
+      {exportErr && (
+        <div className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+          {exportErr}
+        </div>
+      )}
 
       <Kpis ocs={filtered} />
       <Filters filters={filters} setFilters={setFilters} facets={facets} />

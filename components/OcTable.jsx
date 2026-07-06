@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, ChevronDown, AlertTriangle, Pencil } from 'lucide-react';
 import { fmtARS, fmtPct, cleanSec } from '@/lib/format.js';
+import { isTipoObras, areaLabel } from '@/lib/labels.js';
 
 const estadoChip = {
   pagada: 'bg-emerald-100 text-emerald-700',
@@ -51,9 +52,14 @@ function Row({ oc, editable }) {
         <td className="px-2 py-2.5 text-slate-300">{open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</td>
         <td className="px-2 py-2.5 font-semibold text-slate-700 whitespace-nowrap">{oc.ocNum}</td>
         <td className="px-2 py-2.5">
-          <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${oc.tipo.startsWith('Obras') ? 'bg-indigo-100 text-indigo-700' : 'bg-cyan-100 text-cyan-700'}`}>
-            {oc.tipo.startsWith('Obras') ? 'Obras' : 'Educación'}
-          </span>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            {oc.areaKey && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium w-fit max-w-[200px] truncate ${isTipoObras(oc) ? 'bg-indigo-100 text-indigo-700' : 'bg-cyan-100 text-cyan-700'}`} title={areaLabel(oc.areaKey)}>
+                {areaLabel(oc.areaKey)}
+              </span>
+            )}
+            <span className="text-[11px] text-slate-600 truncate max-w-[180px]" title={oc.tipo}>{oc.tipo || '—'}</span>
+          </div>
         </td>
         <td className="px-2 py-2.5 text-slate-600 max-w-[150px] truncate" title={oc.secretaria}>{cleanSec(oc.secretaria)}</td>
         <td className="px-2 py-2.5 text-slate-600 max-w-[280px] truncate" title={oc.descripcion}>{oc.descripcion || '—'}</td>
@@ -69,24 +75,30 @@ function Row({ oc, editable }) {
       </tr>
       {open && (
         <tr className="bg-slate-50/80">
-          <td colSpan={11} className="px-6 py-4">
+          <td colSpan={11} className="px-4 py-4">
+            <div className="flex items-center justify-between gap-3 mb-3 pb-2 border-b border-slate-200">
+              <div className="text-sm font-semibold text-slate-700 truncate">
+                OC {oc.ocNum} · {oc.descripcion || 'Sin descripción'}
+              </div>
+              {editable && oc.id && (
+                <Link
+                  href={`/tramites/${oc.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1.5 shrink-0 text-sm font-medium bg-brand-600 text-white hover:bg-brand-700 px-4 py-2 rounded-lg shadow-sm"
+                >
+                  <Pencil size={14} /> Editar trámite
+                </Link>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <Chip label="Monto OC" value={fmtARS(oc.ocMonto)} tone="blue" />
               <Chip label="Pagado" value={fmtARS(oc.totalPagado)} tone="emerald" />
               <Chip label="Saldo" value={fmtARS(oc.saldo)} tone={oc.estadoSaldo === 'pagada' ? 'emerald' : (oc.estadoSaldo === 'pendiente' ? 'amber' : 'rose')} />
               <Chip label="Avance" value={fmtPct(oc.avance)} />
               <Chip label="Proveedor" value={oc.proveedor} />
-              <div className="ml-auto flex items-center gap-3">
-                {oc.ocMontoFaltante && (
-                  <span className="text-xs text-rose-600 font-medium flex items-center gap-1"><AlertTriangle size={14} /> Falta cargar el monto de la OC</span>
-                )}
-                {editable && oc.id && (
-                  <Link href={`/tramites/${oc.id}`} onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium bg-brand-600 text-white hover:bg-brand-700 px-3 py-1.5 rounded-lg">
-                    <Pencil size={13} /> Editar
-                  </Link>
-                )}
-              </div>
+              {oc.ocMontoFaltante && (
+                <span className="text-xs text-rose-600 font-medium flex items-center gap-1 w-full sm:w-auto"><AlertTriangle size={14} /> Falta cargar el monto de la OC</span>
+              )}
             </div>
             <div className="text-xs font-semibold text-slate-500 mb-1.5">Historial de órdenes de pago</div>
             {oc.pagos.length === 0 ? (
@@ -100,6 +112,7 @@ function Row({ oc, editable }) {
                       <th className="py-2 px-3 font-semibold">INF REC</th>
                       <th className="py-2 px-3 font-semibold">N° Pago</th>
                       <th className="py-2 px-3 font-semibold text-right">Monto pago</th>
+                      <th className="py-2 px-3 font-semibold text-right">Monto neto</th>
                       <th className="py-2 px-3 font-semibold text-right">Saldo luego</th>
                     </tr>
                   </thead>
@@ -110,6 +123,7 @@ function Row({ oc, editable }) {
                         <td className="py-2 px-3 text-slate-500 tabular-nums">{p.infRec || '—'}</td>
                         <td className="py-2 px-3 text-slate-500 tabular-nums">{p.pagoNum || '—'}</td>
                         <td className="py-2 px-3 text-right tabular-nums text-slate-700">{fmtARS(p.monto)}</td>
+                        <td className="py-2 px-3 text-right tabular-nums text-slate-500">{p.montoNeto != null ? fmtARS(p.montoNeto) : '—'}</td>
                         <td className={`py-2 px-3 text-right tabular-nums font-semibold ${p.saldoLuego < -1 ? 'text-rose-600' : 'text-slate-800'}`}>{fmtARS(p.saldoLuego)}</td>
                       </tr>
                     ))}

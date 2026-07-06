@@ -4,27 +4,38 @@ import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Save, ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client.js';
 import { parseMonto, fmtARS } from '@/lib/format.js';
+import { TIPOS_PROCEDIMIENTO, inferArea } from '@/lib/labels.js';
+import Combobox from './Combobox.jsx';
+import proveedoresCatalog from '@/data/proveedores.json';
 
-const emptyPago = () => ({ concepto: '', inf_rec: '', nro: '', monto: '', fecha: '', estado: '' });
+const emptyPago = () => ({ concepto: '', inf_rec: '', nro: '', monto: '', monto_neto: '', fecha: '', estado: '' });
 
 const blank = {
-  tipo: 'obras', secretaria: '', proveedor: '', rubro: '',
+  tipo: '', area: '', secretaria: '', proveedor: '', rubro: '',
   nro_item: '', descripcion: '', estado: '',
+  sp_parte1: '', sp_parte2: '', sp_parte3: '',
   oc_nro: '', oc_fecha: '', oc_monto: '',
   financiamiento: '', destino: '', cotizacion: '', acompanantes: '', vb_lyt: '', vb_leo: '',
   sol_pedido_monto: '', sol_gasto_nro: '', proceso_tipo_numero: '', proceso_apertura: '',
   obs_generales: '', obs_tecnicas: '',
 };
 
-function Field({ label, children, full }) {
+function Field({ label, children, full, hint }) {
   return (
     <label className={`flex flex-col gap-1 text-xs ${full ? 'md:col-span-2' : ''}`}>
       <span className="font-medium text-slate-500">{label}</span>
       {children}
+      {hint && <span className="text-[10px] text-slate-400">{hint}</span>}
     </label>
   );
 }
-const inputCls = 'border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none';
+const inputCls = 'border border-slate-300 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none';
+
+function mergeOptions(base, extra) {
+  const set = new Set(base);
+  (extra || '').trim() && set.add(extra.trim());
+  return [...set].sort((a, b) => a.localeCompare(b, 'es'));
+}
 
 export default function TramiteForm({ initial, pagosInitial, lookups }) {
   const router = useRouter();
@@ -32,22 +43,31 @@ export default function TramiteForm({ initial, pagosInitial, lookups }) {
   const [f, setF] = useState({ ...blank, ...(initial || {}) });
   const [pagos, setPagos] = useState(pagosInitial?.length ? pagosInitial.map((p) => ({
     concepto: p.concepto || '', inf_rec: p.inf_rec || '', nro: p.nro || '',
-    monto: p.monto != null ? String(p.monto) : '', fecha: p.fecha || '', estado: p.estado || '',
+    monto: p.monto != null ? String(p.monto) : '',
+    monto_neto: p.monto_neto != null ? String(p.monto_neto) : '',
+    fecha: p.fecha || '', estado: p.estado || '',
   })) : [emptyPago()]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [advanced, setAdvanced] = useState(false);
 
   const set = (k, v) => setF((s) => ({ ...s, [k]: v }));
+
+  const proveedorOptions = useMemo(() => {
+    const set = new Set([...proveedoresCatalog, ...(lookups.proveedores || [])]);
+    if (f.proveedor) set.add(f.proveedor);
+    return [...set].sort((a, b) => a.localeCompare(b, 'es'));
+  }, [lookups.proveedores, f.proveedor]);
+
+  const tipoOptions = useMemo(() => mergeOptions(TIPOS_PROCEDIMIENTO, f.tipo), [f.tipo]);
+  const secretariaOptions = useMemo(() => mergeOptions(lookups.secretarias || [], f.secretaria), [lookups.secretarias, f.secretaria]);
+  const rubroOptions = useMemo(() => mergeOptions(lookups.rubros || [], f.rubro), [lookups.rubros, f.rubro]);
+
   const setPago = (i, k, v) => setPagos((arr) => arr.map((p, j) => (j === i ? { ...p, [k]: v } : p)));
 
   const ocMonto = parseMonto(f.oc_monto);
   const pagado = pagos.reduce((s, p) => s + (parseMonto(p.monto) || 0), 0);
   const saldo = (ocMonto || 0) - pagado;
-
-  const datalist = (id, items) => (
-    <datalist id={id}>{items.map((x) => <option key={x} value={x} />)}</datalist>
-  );
 
   async function ensureLookup(supabase, table, nombre) {
     const n = (nombre || '').trim();
@@ -57,6 +77,11 @@ export default function TramiteForm({ initial, pagosInitial, lookups }) {
     const { data: ins, error } = await supabase.from(table).insert({ nombre: n }).select('id').single();
     if (error) throw new Error(`${table}: ${error.message}`);
     return ins.id;
+  }
+
+  function resolveArea() {
+    if (f.area === 'obras' || f.area === 'educacion') return f.area;
+    return inferArea(f.secretaria);
   }
 
   async function save(e) {
@@ -70,18 +95,30 @@ export default function TramiteForm({ initial, pagosInitial, lookups }) {
         ensureLookup(supabase, 'rubros', f.rubro),
       ]);
       const row = {
-        tipo: f.tipo, secretaria_id, proveedor_id, rubro_id,
-        nro_item: f.nro_item || null, descripcion: f.descripcion || null, estado: f.estado || null,
-        oc_nro: f.oc_nro || null, oc_fecha: f.oc_fecha || null,
-        oc_monto: ocMonto, // null si vacío => faltante
-        financiamiento: f.financiamiento || null, destino: f.destino || null,
-        cotizacion: f.cotizacion || null, acompanantes: f.acompanantes || null,
-        vb_lyt: f.vb_lyt || null, vb_leo: f.vb_leo || null,
+        tipo: (f.tipo || '').trim() || null,
+        area: resolveArea(),
+        secretaria_id, proveedor_id, rubro_id,
+        nro_item: f.nro_item || null,
+        sp_parte1: f.sp_parte1 || null,
+        sp_parte2: f.sp_parte2 || null,
+        sp_parte3: f.sp_parte3 || null,
+        descripcion: f.descripcion || null,
+        estado: f.estado || null,
+        oc_nro: f.oc_nro || null,
+        oc_fecha: f.oc_fecha || null,
+        oc_monto: ocMonto,
+        financiamiento: f.financiamiento || null,
+        destino: f.destino || null,
+        cotizacion: f.cotizacion || null,
+        acompanantes: f.acompanantes || null,
+        vb_lyt: f.vb_lyt || null,
+        vb_leo: f.vb_leo || null,
         sol_pedido_monto: parseMonto(f.sol_pedido_monto),
         sol_gasto_nro: f.sol_gasto_nro || null,
         proceso_tipo_numero: f.proceso_tipo_numero || null,
         proceso_apertura: f.proceso_apertura || null,
-        obs_generales: f.obs_generales || null, obs_tecnicas: f.obs_tecnicas || null,
+        obs_generales: f.obs_generales || null,
+        obs_tecnicas: f.obs_tecnicas || null,
       };
 
       let tramiteId = initial?.id;
@@ -94,14 +131,19 @@ export default function TramiteForm({ initial, pagosInitial, lookups }) {
         tramiteId = data.id;
       }
 
-      // Reemplazar pagos (idempotente)
       await supabase.from('ordenes_pago').delete().eq('tramite_id', tramiteId);
       const rows = pagos
-        .filter((p) => p.concepto || p.inf_rec || p.nro || p.monto)
+        .filter((p) => p.concepto || p.inf_rec || p.nro || p.monto || p.monto_neto)
         .map((p, i) => ({
-          tramite_id: tramiteId, orden_index: i + 1,
-          concepto: p.concepto || null, inf_rec: p.inf_rec || null, nro: p.nro || null,
-          monto: parseMonto(p.monto) || 0, fecha: p.fecha || null, estado: p.estado || null,
+          tramite_id: tramiteId,
+          orden_index: i + 1,
+          concepto: p.concepto || null,
+          inf_rec: p.inf_rec || null,
+          nro: p.nro || null,
+          monto: parseMonto(p.monto) || 0,
+          monto_neto: parseMonto(p.monto_neto),
+          fecha: p.fecha || null,
+          estado: p.estado || null,
         }));
       if (rows.length) {
         const { error } = await supabase.from('ordenes_pago').insert(rows);
@@ -134,35 +176,44 @@ export default function TramiteForm({ initial, pagosInitial, lookups }) {
 
       {error && <div className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 flex items-center gap-2"><AlertTriangle size={16} /> {error}</div>}
 
-      {/* Datos principales */}
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
         <h2 className="text-sm font-semibold text-slate-700 mb-3">Trámite</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Field label="Tipo">
-            <select value={f.tipo} onChange={(e) => set('tipo', e.target.value)} className={inputCls}>
-              <option value="obras">Obras Públicas</option>
-              <option value="educacion">Educación Infra</option>
-            </select>
+            <Combobox value={f.tipo} onChange={(v) => set('tipo', v)} options={tipoOptions} placeholder="Ej. Licitación Pública" className={inputCls} />
           </Field>
-          <Field label="N° ítem"><input value={f.nro_item} onChange={(e) => set('nro_item', e.target.value)} className={inputCls} /></Field>
+          <Field label="N° ítem">
+            <input value={f.nro_item} onChange={(e) => set('nro_item', e.target.value)} className={inputCls} />
+          </Field>
+
+          <Field label="SP (Solicitud de pedido)" full hint="Tres números separados por guiones">
+            <div className="flex items-center gap-2">
+              <input value={f.sp_parte1} onChange={(e) => set('sp_parte1', e.target.value)} placeholder="N°" inputMode="numeric" className={inputCls} />
+              <span className="text-slate-400 shrink-0">—</span>
+              <input value={f.sp_parte2} onChange={(e) => set('sp_parte2', e.target.value)} placeholder="N°" inputMode="numeric" className={inputCls} />
+              <span className="text-slate-400 shrink-0">—</span>
+              <input value={f.sp_parte3} onChange={(e) => set('sp_parte3', e.target.value)} placeholder="N°" inputMode="numeric" className={inputCls} />
+            </div>
+          </Field>
+
           <Field label="Secretaría">
-            <input list="dl-sec" value={f.secretaria} onChange={(e) => set('secretaria', e.target.value)} className={inputCls} />
-            {datalist('dl-sec', lookups.secretarias)}
+            <Combobox value={f.secretaria} onChange={(v) => set('secretaria', v)} options={secretariaOptions} placeholder="Nombre de secretaría" className={inputCls} />
           </Field>
           <Field label="Proveedor">
-            <input list="dl-prov" value={f.proveedor} onChange={(e) => set('proveedor', e.target.value)} className={inputCls} />
-            {datalist('dl-prov', lookups.proveedores)}
+            <Combobox value={f.proveedor} onChange={(v) => set('proveedor', v)} options={proveedorOptions} placeholder="Buscar proveedor…" className={inputCls} maxSuggestions={15} />
           </Field>
           <Field label="Rubro">
-            <input list="dl-rub" value={f.rubro} onChange={(e) => set('rubro', e.target.value)} className={inputCls} />
-            {datalist('dl-rub', lookups.rubros)}
+            <Combobox value={f.rubro} onChange={(v) => set('rubro', v)} options={rubroOptions} placeholder="Rubro" className={inputCls} />
           </Field>
-          <Field label="Estado"><input value={f.estado} onChange={(e) => set('estado', e.target.value)} className={inputCls} /></Field>
-          <Field label="Descripción" full><textarea value={f.descripcion} onChange={(e) => set('descripcion', e.target.value)} rows={2} className={inputCls} /></Field>
+          <Field label="Estado">
+            <Combobox value={f.estado} onChange={(v) => set('estado', v)} options={mergeOptions([], f.estado)} placeholder="Estado del trámite" className={inputCls} />
+          </Field>
+          <Field label="Descripción" full>
+            <textarea value={f.descripcion} onChange={(e) => set('descripcion', e.target.value)} rows={2} className={inputCls} />
+          </Field>
         </div>
       </section>
 
-      {/* Orden de compra */}
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
         <h2 className="text-sm font-semibold text-slate-700 mb-3">Orden de compra</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -172,29 +223,38 @@ export default function TramiteForm({ initial, pagosInitial, lookups }) {
         </div>
       </section>
 
-      {/* Órdenes de pago */}
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <h2 className="text-sm font-semibold text-slate-700">Órdenes de pago</h2>
           <div className="text-xs text-slate-500">Pagado: <b>{fmtARS(pagado)}</b> · Saldo: <b className={saldo < -1 ? 'text-rose-600' : 'text-slate-700'}>{ocMonto == null ? '— (falta monto OC)' : fmtARS(saldo)}</b></div>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {pagos.map((p, i) => (
-            <div key={i} className="grid grid-cols-2 md:grid-cols-12 gap-2 items-center">
-              <input value={p.concepto} onChange={(e) => setPago(i, 'concepto', e.target.value)} placeholder="Concepto (AF/C1/mes)" className={`${inputCls} md:col-span-2`} />
-              <input value={p.inf_rec} onChange={(e) => setPago(i, 'inf_rec', e.target.value)} placeholder="INF REC" className={`${inputCls} md:col-span-2`} />
-              <input value={p.nro} onChange={(e) => setPago(i, 'nro', e.target.value)} placeholder="N° pago" className={`${inputCls} md:col-span-2`} />
-              <input inputMode="decimal" value={p.monto} onChange={(e) => setPago(i, 'monto', e.target.value)} placeholder="Monto" className={`${inputCls} md:col-span-2`} />
-              <input type="date" value={p.fecha || ''} onChange={(e) => setPago(i, 'fecha', e.target.value)} className={`${inputCls} md:col-span-2`} />
-              <input value={p.estado} onChange={(e) => setPago(i, 'estado', e.target.value)} placeholder="Estado" className={`${inputCls} md:col-span-1`} />
-              <button type="button" onClick={() => setPagos((arr) => arr.filter((_, j) => j !== i))} className="text-slate-400 hover:text-rose-600 md:col-span-1 justify-self-start"><Trash2 size={16} /></button>
+            <div key={i} className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+                <input value={p.concepto} onChange={(e) => setPago(i, 'concepto', e.target.value)} placeholder="Concepto (AF/C1/mes)" className={inputCls} />
+                <input value={p.inf_rec} onChange={(e) => setPago(i, 'inf_rec', e.target.value)} placeholder="INF REC" className={inputCls} />
+                <input value={p.nro} onChange={(e) => setPago(i, 'nro', e.target.value)} placeholder="N° pago" className={inputCls} />
+                <input type="date" value={p.fecha || ''} onChange={(e) => setPago(i, 'fecha', e.target.value)} className={inputCls} title="Fecha" />
+                <input value={p.estado} onChange={(e) => setPago(i, 'estado', e.target.value)} placeholder="Estado" className={inputCls} />
+                <button type="button" onClick={() => setPagos((arr) => arr.filter((_, j) => j !== i))} className="text-slate-400 hover:text-rose-600 justify-self-start"><Trash2 size={16} /></button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <label className="flex flex-col gap-1 text-xs">
+                  <span className="font-medium text-slate-500">Monto bruto (afecta saldo OC)</span>
+                  <input inputMode="decimal" value={p.monto} onChange={(e) => setPago(i, 'monto', e.target.value)} placeholder="Monto bruto" className={inputCls} />
+                </label>
+                <label className="flex flex-col gap-1 text-xs">
+                  <span className="font-medium text-slate-500">Monto neto <span className="font-normal text-slate-400">(solo informativo)</span></span>
+                  <input inputMode="decimal" value={p.monto_neto} onChange={(e) => setPago(i, 'monto_neto', e.target.value)} placeholder="Monto neto al proveedor" className={inputCls} />
+                </label>
+              </div>
             </div>
           ))}
         </div>
         <button type="button" onClick={() => setPagos((arr) => [...arr, emptyPago()])} className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"><Plus size={16} /> Agregar pago</button>
       </section>
 
-      {/* Avanzado (circuito extendido) */}
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
         <button type="button" onClick={() => setAdvanced((a) => !a)} className="text-sm font-semibold text-slate-700">
           {advanced ? '▾' : '▸'} Datos del circuito (solicitud, proceso, V.B., observaciones)

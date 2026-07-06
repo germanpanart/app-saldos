@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LogOut, LayoutDashboard } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client.js';
+import { AREA_LABEL } from '@/lib/labels.js';
 
 const roleLabel = { admin: 'Administrador', editor: 'Editor', lector: 'Lector' };
 
@@ -21,7 +22,7 @@ export default function Header({ email, role }) {
           <LayoutDashboard size={22} />
           <div>
             <h1 className="text-base font-bold leading-tight">Saldos de Órdenes de Compra</h1>
-            <p className="text-[11px] text-brand-100/80">Compras y Contrataciones · Obras · Educación</p>
+            <p className="text-[11px] text-brand-100/80">Compras y Contrataciones · {AREA_LABEL.obras} · {AREA_LABEL.educacion}</p>
           </div>
         </Link>
         <div className="flex items-center gap-3">
