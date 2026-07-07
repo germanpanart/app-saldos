@@ -2,8 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight, ChevronDown, AlertTriangle, Pencil } from 'lucide-react';
-import { fmtARS, fmtPct, cleanSec } from '@/lib/format.js';
-import { isTipoObras, areaLabel } from '@/lib/labels.js';
+import { fmtARS, fmtPct } from '@/lib/format.js';
 
 const estadoChip = {
   pagada: 'bg-emerald-100 text-emerald-700',
@@ -51,17 +50,8 @@ function Row({ oc, editable }) {
       <tr className={`border-b border-slate-100 hover:bg-brand-50/40 cursor-pointer ${open ? 'bg-brand-50/60' : ''}`} onClick={() => setOpen((o) => !o)}>
         <td className="px-2 py-2.5 text-slate-300">{open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</td>
         <td className="px-2 py-2.5 font-semibold text-slate-700 whitespace-nowrap">{oc.ocNum}</td>
-        <td className="px-2 py-2.5">
-          <div className="flex flex-col gap-0.5 min-w-0">
-            {oc.areaKey && (
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium w-fit max-w-[200px] truncate ${isTipoObras(oc) ? 'bg-indigo-100 text-indigo-700' : 'bg-cyan-100 text-cyan-700'}`} title={areaLabel(oc.areaKey)}>
-                {areaLabel(oc.areaKey)}
-              </span>
-            )}
-            <span className="text-[11px] text-slate-600 truncate max-w-[180px]" title={oc.tipo}>{oc.tipo || '—'}</span>
-          </div>
-        </td>
-        <td className="px-2 py-2.5 text-slate-600 max-w-[150px] truncate" title={oc.secretaria}>{cleanSec(oc.secretaria)}</td>
+        <td className="px-2 py-2.5 text-slate-600 max-w-[160px] truncate" title={oc.procedimiento}>{oc.procedimiento || '—'}</td>
+        <td className="px-2 py-2.5 text-slate-600 max-w-[220px] truncate" title={oc.secretaria}>{oc.secretaria}</td>
         <td className="px-2 py-2.5 text-slate-600 max-w-[280px] truncate" title={oc.descripcion}>{oc.descripcion || '—'}</td>
         <td className="px-2 py-2.5"><span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md whitespace-nowrap">{oc.rubro}</span></td>
         <td className="px-3 py-2.5 text-right tabular-nums whitespace-nowrap text-slate-700">{fmtARS(oc.ocMonto)}</td>
@@ -163,7 +153,7 @@ export default function OcTable({ ocs, editable = false }) {
             <tr>
               <th className="px-2 py-2.5 w-6"></th>
               {th('ocNum', 'OC N°')}
-              {th('tipo', 'Tipo')}
+              {th('procedimiento', 'Procedimiento')}
               {th('secretaria', 'Secretaría')}
               <th className="px-3 py-2.5 font-semibold text-slate-500">Descripción</th>
               {th('rubro', 'Rubro')}

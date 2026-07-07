@@ -2,7 +2,7 @@ import './globals.css';
 
 export const metadata = {
   title: 'Saldos de Órdenes de Compra · Compras y Contrataciones',
-  description: 'Sistema de seguimiento de saldos de órdenes de compra (Infraestructura y planificación / EDUCACIÓN, PRODUCCIÓN Y TRABAJO)',
+  description: 'Sistema de seguimiento de saldos de órdenes de compra (Infraestructura y Planificación / Educación, Producción y Trabajo)',
 };
 
 export default function RootLayout({ children }) {

@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Save, ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client.js';
-import { parseMonto, fmtARS } from '@/lib/format.js';
+import { parseMonto, fmtARS, displaySecretaria, SECRETARIA_NOMBRE } from '@/lib/format.js';
 import { TIPOS_PROCEDIMIENTO, inferArea } from '@/lib/labels.js';
 import Combobox from './Combobox.jsx';
 import proveedoresCatalog from '@/data/proveedores.json';
@@ -11,7 +11,7 @@ import proveedoresCatalog from '@/data/proveedores.json';
 const emptyPago = () => ({ concepto: '', inf_rec: '', nro: '', monto: '', monto_neto: '', fecha: '', estado: '' });
 
 const blank = {
-  tipo: '', area: '', secretaria: '', proveedor: '', rubro: '',
+  procedimiento: '', area: '', secretaria: '', proveedor: '', rubro: '',
   nro_item: '', descripcion: '', estado: '',
   sp_parte1: '', sp_parte2: '', sp_parte3: '',
   oc_nro: '', oc_fecha: '', oc_monto: '',
@@ -59,8 +59,12 @@ export default function TramiteForm({ initial, pagosInitial, lookups }) {
     return [...set].sort((a, b) => a.localeCompare(b, 'es'));
   }, [lookups.proveedores, f.proveedor]);
 
-  const tipoOptions = useMemo(() => mergeOptions(TIPOS_PROCEDIMIENTO, f.tipo), [f.tipo]);
-  const secretariaOptions = useMemo(() => mergeOptions(lookups.secretarias || [], f.secretaria), [lookups.secretarias, f.secretaria]);
+  const procedimientoOptions = useMemo(() => mergeOptions(TIPOS_PROCEDIMIENTO, f.procedimiento), [f.procedimiento]);
+  const secretariaOptions = useMemo(() => mergeOptions([
+    SECRETARIA_NOMBRE.obras,
+    SECRETARIA_NOMBRE.educacion,
+    ...(lookups.secretarias || []),
+  ], f.secretaria), [lookups.secretarias, f.secretaria]);
   const rubroOptions = useMemo(() => mergeOptions(lookups.rubros || [], f.rubro), [lookups.rubros, f.rubro]);
 
   const setPago = (i, k, v) => setPagos((arr) => arr.map((p, j) => (j === i ? { ...p, [k]: v } : p)));
@@ -90,12 +94,12 @@ export default function TramiteForm({ initial, pagosInitial, lookups }) {
     try {
       const supabase = createClient();
       const [secretaria_id, proveedor_id, rubro_id] = await Promise.all([
-        ensureLookup(supabase, 'secretarias', f.secretaria),
+        ensureLookup(supabase, 'secretarias', displaySecretaria(f.secretaria)),
         ensureLookup(supabase, 'proveedores', f.proveedor),
         ensureLookup(supabase, 'rubros', f.rubro),
       ]);
       const row = {
-        tipo: (f.tipo || '').trim() || null,
+        tipo: (f.procedimiento || '').trim() || null,
         area: resolveArea(),
         secretaria_id, proveedor_id, rubro_id,
         nro_item: f.nro_item || null,
@@ -179,8 +183,8 @@ export default function TramiteForm({ initial, pagosInitial, lookups }) {
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
         <h2 className="text-sm font-semibold text-slate-700 mb-3">Trámite</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <Field label="Tipo">
-            <Combobox value={f.tipo} onChange={(v) => set('tipo', v)} options={tipoOptions} placeholder="Ej. Licitación Pública" className={inputCls} />
+          <Field label="Tipo de procedimiento">
+            <Combobox value={f.procedimiento} onChange={(v) => set('procedimiento', v)} options={procedimientoOptions} placeholder="Ej. Licitación Pública" className={inputCls} />
           </Field>
           <Field label="N° ítem">
             <input value={f.nro_item} onChange={(e) => set('nro_item', e.target.value)} className={inputCls} />

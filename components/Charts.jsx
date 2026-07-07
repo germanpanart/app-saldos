@@ -3,7 +3,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
   PieChart, Pie, Legend, CartesianGrid,
 } from 'recharts';
-import { fmtARS, fmtCompactARS, cleanSec, shortLabel } from '@/lib/format.js';
+import { fmtCompactARS, displaySecretaria, shortLabel } from '@/lib/format.js';
 
 const COLORS = ['#2563eb', '#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
 
@@ -21,7 +21,7 @@ function Panel({ title, children }) {
 export default function Charts({ ocs }) {
   const bySec = Object.values(
     ocs.reduce((acc, o) => {
-      const k = cleanSec(o.secretaria) || '(s/secretaría)';
+      const k = displaySecretaria(o.secretaria) || '(s/secretaría)';
       acc[k] = acc[k] || { name: k, saldo: 0 };
       acc[k].saldo += Math.max(0, o.saldo);
       return acc;

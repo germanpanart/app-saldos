@@ -8,7 +8,7 @@ import Filters, { filtersTxt } from './Filters.jsx';
 import Charts from './Charts.jsx';
 import OcTable from './OcTable.jsx';
 
-const EMPTY = { keyword: '', tipo: 'todos', secretaria: 'todos', rubro: 'todos', estado: 'todos' };
+const EMPTY = { keyword: '', procedimiento: 'todos', secretaria: 'todos', rubro: 'todos', estado: 'todos' };
 
 export default function Dashboard({ ocs, canEdit }) {
   const router = useRouter();
@@ -17,7 +17,7 @@ export default function Dashboard({ ocs, canEdit }) {
   const [exportErr, setExportErr] = useState('');
 
   const facets = useMemo(() => ({
-    tipos: [...new Set(ocs.map((o) => o.tipo))].sort(),
+    procedimientos: [...new Set(ocs.map((o) => o.procedimiento).filter(Boolean))].sort(),
     secretarias: [...new Set(ocs.map((o) => o.secretaria))].sort(),
     rubros: [...new Set(ocs.map((o) => o.rubro))].sort(),
   }), [ocs]);
@@ -25,7 +25,7 @@ export default function Dashboard({ ocs, canEdit }) {
   const filtered = useMemo(() => {
     const kw = filters.keyword.trim().toLowerCase();
     return ocs.filter((o) => {
-      if (filters.tipo !== 'todos' && o.tipo !== filters.tipo) return false;
+      if (filters.procedimiento !== 'todos' && o.procedimiento !== filters.procedimiento) return false;
       if (filters.secretaria !== 'todos' && o.secretaria !== filters.secretaria) return false;
       if (filters.rubro !== 'todos' && o.rubro !== filters.rubro) return false;
       if (filters.estado !== 'todos') {

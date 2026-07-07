@@ -41,9 +41,11 @@ async function fetchOcs() {
 
 // OC del endpoint -> fila de trámite + filas de pago
 function mapTramite(oc) {
+  const isObras = oc.tipo.startsWith('Obras');
   return {
     import_key: oc.id,
-    tipo: oc.tipo.startsWith('Obras') ? 'obras' : 'educacion',
+    area: isObras ? 'obras' : 'educacion',
+    tipo: null,
     secretaria: oc.secretaria || null,
     proveedor: oc.proveedor || null,
     rubro: oc.rubro || null,
@@ -91,7 +93,7 @@ async function main() {
   console.log(`Saldo total:     ${fmt(s.montoTotal - s.pagadoTotal)}`);
 
   // Parity check conocido: OC 48 (Educación) -> AF + C1
-  const oc48 = tramites.find((t) => t.oc_nro === '48' && t.tipo === 'educacion');
+  const oc48 = tramites.find((t) => t.oc_nro === '48' && t.area === 'educacion');
   if (oc48) {
     const pagado = oc48.pagos.reduce((a, p) => a + p.monto, 0);
     console.log(`\nParity OC 48: montoOC=${fmt(oc48.oc_monto)} pagado=${fmt(pagado)} saldo=${fmt((oc48.oc_monto || 0) - pagado)} (esperado saldo ≈ $56.851.781,28)`);
@@ -127,7 +129,7 @@ async function main() {
   let okT = 0, okP = 0;
   for (const t of tramites) {
     const row = {
-      import_key: t.import_key, tipo: t.tipo,
+      import_key: t.import_key, area: t.area, tipo: t.tipo,
       secretaria_id: t.secretaria ? secMap[t.secretaria] : null,
       proveedor_id: t.proveedor ? provMap[t.proveedor] : null,
       rubro_id: t.rubro ? rubMap[t.rubro] : null,
