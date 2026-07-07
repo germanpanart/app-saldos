@@ -3,7 +3,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
   PieChart, Pie, Legend, CartesianGrid,
 } from 'recharts';
-import { fmtCompactARS, displaySecretaria, shortLabel } from '@/lib/format.js';
+import { fmtARS, fmtCompactARS, displaySecretaria, shortLabel } from '@/lib/format.js';
 
 const COLORS = ['#2563eb', '#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
 
