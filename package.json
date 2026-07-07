@@ -9,7 +9,9 @@
     "start": "next start",
     "migrate": "node --env-file=.env scripts/migrate.mjs",
     "seed:dry": "node scripts/seed.mjs --dry-run",
-    "seed": "node --env-file=.env scripts/seed.mjs"
+    "seed": "node --env-file=.env scripts/seed.mjs",
+    "backfill-proceso:dry": "node scripts/backfill-proceso.mjs --dry-run",
+    "backfill-proceso": "node --env-file=.env scripts/backfill-proceso.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",

@@ -46,6 +46,7 @@ function mapTramite(oc) {
     import_key: oc.id,
     area: isObras ? 'obras' : 'educacion',
     tipo: null,
+    proceso_tipo_numero: (oc.procesoTipoNumero || '').trim() || null,
     secretaria: oc.secretaria || null,
     proveedor: oc.proveedor || null,
     rubro: oc.rubro || null,
@@ -130,6 +131,7 @@ async function main() {
   for (const t of tramites) {
     const row = {
       import_key: t.import_key, area: t.area, tipo: t.tipo,
+      proceso_tipo_numero: t.proceso_tipo_numero,
       secretaria_id: t.secretaria ? secMap[t.secretaria] : null,
       proveedor_id: t.proveedor ? provMap[t.proveedor] : null,
       rubro_id: t.rubro ? rubMap[t.rubro] : null,
