@@ -51,9 +51,9 @@ function Row({ oc, editable }) {
         <td className="px-2 py-2.5 text-slate-300">{open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</td>
         <td className="px-2 py-2.5 font-semibold text-slate-700 whitespace-nowrap">{oc.ocNum}</td>
         <td className="px-2 py-2.5 text-slate-600 max-w-[160px] truncate" title={oc.procedimiento}>{oc.procedimiento || '—'}</td>
+        <td className="px-2 py-2.5 text-slate-600 whitespace-nowrap tabular-nums">{oc.procedimientoNro || '—'}</td>
         <td className="px-2 py-2.5 text-slate-600 max-w-[220px] truncate" title={oc.secretaria}>{oc.secretaria}</td>
         <td className="px-2 py-2.5 text-slate-600 max-w-[280px] truncate" title={oc.descripcion}>{oc.descripcion || '—'}</td>
-        <td className="px-2 py-2.5"><span className="text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md whitespace-nowrap">{oc.rubro}</span></td>
         <td className="px-3 py-2.5 text-right tabular-nums whitespace-nowrap text-slate-700">{fmtARS(oc.ocMonto)}</td>
         <td className="px-3 py-2.5 text-right tabular-nums whitespace-nowrap text-slate-400">{fmtARS(oc.totalPagado)}</td>
         <td className={`px-3 py-2.5 text-right tabular-nums whitespace-nowrap font-bold ${saldoColor}`}>
@@ -133,8 +133,11 @@ export default function OcTable({ ocs, editable = false }) {
   const sorted = [...ocs].sort((a, b) => {
     const m = sort.dir === 'asc' ? 1 : -1;
     const va = a[sort.key], vb = b[sort.key];
-    if (typeof va === 'number') return (va - vb) * m;
-    return String(va).localeCompare(String(vb)) * m;
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * m;
+    return String(va).localeCompare(String(vb), 'es', { numeric: true }) * m;
   });
   const th = (key, label, extra = '') => (
     <th
@@ -154,9 +157,9 @@ export default function OcTable({ ocs, editable = false }) {
               <th className="px-2 py-2.5 w-6"></th>
               {th('ocNum', 'OC N°')}
               {th('procedimiento', 'Procedimiento')}
+              {th('procedimientoNro', 'N°')}
               {th('secretaria', 'Secretaría')}
               <th className="px-3 py-2.5 font-semibold text-slate-500">Descripción</th>
-              {th('rubro', 'Rubro')}
               {th('ocMonto', 'Monto OC', 'text-right')}
               {th('totalPagado', 'Pagado', 'text-right')}
               {th('saldo', 'Saldo', 'text-right')}

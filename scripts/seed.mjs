@@ -74,7 +74,9 @@ function summarize(tramites) {
   const rubros = uniq(tramites.map((t) => t.rubro));
   const nPagos = tramites.reduce((s, t) => s + t.pagos.length, 0);
   const montoTotal = tramites.reduce((s, t) => s + (t.oc_monto || 0), 0);
-  const pagadoTotal = tramites.reduce((s, t) => s + t.pagos.reduce((a, p) => a + p.monto, 0), 0);
+  const pagadoTotal = tramites.reduce((s, t) => s + t.pagos.reduce((a, p) => (
+    a + (String(p.concepto || '').trim().toUpperCase() === 'AF' ? 0 : p.monto)
+  ), 0), 0);
   return { secretarias, proveedores, rubros, nPagos, montoTotal, pagadoTotal };
 }
 
@@ -96,10 +98,14 @@ async function main() {
   // Parity check conocido: OC 48 (Educación) -> AF + C1
   const oc48 = tramites.find((t) => t.oc_nro === '48' && t.area === 'educacion');
   if (oc48) {
-    const pagado = oc48.pagos.reduce((a, p) => a + p.monto, 0);
+    const pagado = oc48.pagos.reduce((a, p) => a + (String(p.concepto || '').trim().toUpperCase() === 'AF' ? 0 : p.monto), 0);
     console.log(`\nParity OC 48: montoOC=${fmt(oc48.oc_monto)} pagado=${fmt(pagado)} saldo=${fmt((oc48.oc_monto || 0) - pagado)} (esperado saldo ≈ $56.851.781,28)`);
     let acc = 0;
-    oc48.pagos.forEach((p) => { acc += p.monto; console.log(`   ${p.concepto || '—'}: pago ${fmt(p.monto)} -> saldo ${fmt((oc48.oc_monto || 0) - acc)}`); });
+    oc48.pagos.forEach((p) => {
+      const afecta = String(p.concepto || '').trim().toUpperCase() !== 'AF';
+      if (afecta) acc += p.monto;
+      console.log(`   ${p.concepto || '—'}: pago ${fmt(p.monto)}${afecta ? '' : ' (informativo)'} -> saldo ${fmt((oc48.oc_monto || 0) - acc)}`);
+    });
   }
 
   if (DRY) { console.log('\nDRY-RUN ok. No se insertó nada.\n'); return; }

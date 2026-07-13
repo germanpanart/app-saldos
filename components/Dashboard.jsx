@@ -8,7 +8,9 @@ import Filters, { filtersTxt } from './Filters.jsx';
 import Charts from './Charts.jsx';
 import OcTable from './OcTable.jsx';
 
-const EMPTY = { keyword: '', procedimiento: 'todos', secretaria: 'todos', rubro: 'todos', estado: 'todos' };
+import { TIPOS_PROCEDIMIENTO } from '@/lib/labels.js';
+
+const EMPTY = { keyword: '', procedimiento: 'todos', secretaria: 'todos', estado: 'todos' };
 
 export default function Dashboard({ ocs, canEdit }) {
   const router = useRouter();
@@ -17,17 +19,18 @@ export default function Dashboard({ ocs, canEdit }) {
   const [exportErr, setExportErr] = useState('');
 
   const facets = useMemo(() => ({
-    procedimientos: [...new Set(ocs.map((o) => o.procedimiento).filter(Boolean))].sort(),
+    procedimientos: [...new Set([
+      ...TIPOS_PROCEDIMIENTO,
+      ...ocs.map((o) => o.procedimientoTipo).filter(Boolean),
+    ])].sort((a, b) => a.localeCompare(b, 'es')),
     secretarias: [...new Set(ocs.map((o) => o.secretaria))].sort(),
-    rubros: [...new Set(ocs.map((o) => o.rubro))].sort(),
   }), [ocs]);
 
   const filtered = useMemo(() => {
     const kw = filters.keyword.trim().toLowerCase();
     return ocs.filter((o) => {
-      if (filters.procedimiento !== 'todos' && o.procedimiento !== filters.procedimiento) return false;
+      if (filters.procedimiento !== 'todos' && o.procedimientoTipo !== filters.procedimiento) return false;
       if (filters.secretaria !== 'todos' && o.secretaria !== filters.secretaria) return false;
-      if (filters.rubro !== 'todos' && o.rubro !== filters.rubro) return false;
       if (filters.estado !== 'todos') {
         const match = filters.estado === 'revisar'
           ? (o.estadoSaldo === 'revisar' || o.estadoSaldo === 'sobrepago')

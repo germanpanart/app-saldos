@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Save, ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client.js';
-import { parseMonto, fmtARS, displaySecretaria, SECRETARIA_NOMBRE } from '@/lib/format.js';
+import { parseMonto, fmtARS, displaySecretaria, SECRETARIA_NOMBRE, montoPagadoSaldo } from '@/lib/format.js';
 import { TIPOS_PROCEDIMIENTO, inferArea } from '@/lib/labels.js';
 import Combobox from './Combobox.jsx';
 import proveedoresCatalog from '@/data/proveedores.json';
@@ -70,7 +70,7 @@ export default function TramiteForm({ initial, pagosInitial, lookups }) {
   const setPago = (i, k, v) => setPagos((arr) => arr.map((p, j) => (j === i ? { ...p, [k]: v } : p)));
 
   const ocMonto = parseMonto(f.oc_monto);
-  const pagado = pagos.reduce((s, p) => s + (parseMonto(p.monto) || 0), 0);
+  const pagado = montoPagadoSaldo(pagos);
   const saldo = (ocMonto || 0) - pagado;
 
   async function ensureLookup(supabase, table, nombre) {
@@ -245,7 +245,12 @@ export default function TramiteForm({ initial, pagosInitial, lookups }) {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <label className="flex flex-col gap-1 text-xs">
-                  <span className="font-medium text-slate-500">Monto bruto (afecta saldo OC)</span>
+                  <span className="font-medium text-slate-500">
+                    Monto bruto{' '}
+                    {String(p.concepto || '').trim().toUpperCase() === 'AF'
+                      ? <span className="font-normal text-slate-400">(solo informativo, no afecta saldo OC)</span>
+                      : '(afecta saldo OC)'}
+                  </span>
                   <input inputMode="decimal" value={p.monto} onChange={(e) => setPago(i, 'monto', e.target.value)} placeholder="Monto bruto" className={inputCls} />
                 </label>
                 <label className="flex flex-col gap-1 text-xs">

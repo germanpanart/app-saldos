@@ -22,7 +22,7 @@ export default function Filters({ filters, setFilters, facets }) {
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
         <label className="flex flex-col gap-1 text-xs lg:col-span-2">
           <span className="font-medium text-slate-500">Buscar en descripción / proveedor</span>
           <div className="relative">
@@ -37,7 +37,6 @@ export default function Filters({ filters, setFilters, facets }) {
         </label>
         <Select label="Procedimiento" value={filters.procedimiento} onChange={set('procedimiento')} options={opt(facets.procedimientos)} />
         <Select label="Secretaría" value={filters.secretaria} onChange={set('secretaria')} options={opt(facets.secretarias)} />
-        <Select label="Rubro" value={filters.rubro} onChange={set('rubro')} options={opt(facets.rubros)} />
         <Select
           label="Estado de saldo"
           value={filters.estado}
@@ -53,7 +52,7 @@ export default function Filters({ filters, setFilters, facets }) {
       <div className="flex items-center justify-between mt-3">
         <span className="text-xs text-slate-400">{filtersTxt(filters)}</span>
         <button
-          onClick={() => setFilters({ keyword: '', procedimiento: 'todos', secretaria: 'todos', rubro: 'todos', estado: 'todos' })}
+          onClick={() => setFilters({ keyword: '', procedimiento: 'todos', secretaria: 'todos', estado: 'todos' })}
           className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-rose-600"
         >
           <X size={14} /> Limpiar filtros
@@ -68,7 +67,6 @@ export function filtersTxt(f) {
   if (f.keyword) parts.push(`texto "${f.keyword}"`);
   if (f.procedimiento !== 'todos') parts.push(`procedimiento ${f.procedimiento}`);
   if (f.secretaria !== 'todos') parts.push(`secretaría ${f.secretaria}`);
-  if (f.rubro !== 'todos') parts.push(`rubro ${f.rubro}`);
   if (f.estado !== 'todos') parts.push(`estado ${f.estado}`);
   return parts.length ? parts.join(' · ') : 'sin filtros';
 }
