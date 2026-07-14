@@ -8,8 +8,6 @@ import Filters, { filtersTxt } from './Filters.jsx';
 import Charts from './Charts.jsx';
 import OcTable from './OcTable.jsx';
 
-import { TIPOS_PROCEDIMIENTO } from '@/lib/labels.js';
-
 const EMPTY = { keyword: '', procedimiento: 'todos', secretaria: 'todos', estado: 'todos' };
 
 export default function Dashboard({ ocs, canEdit }) {
@@ -19,10 +17,8 @@ export default function Dashboard({ ocs, canEdit }) {
   const [exportErr, setExportErr] = useState('');
 
   const facets = useMemo(() => ({
-    procedimientos: [...new Set([
-      ...TIPOS_PROCEDIMIENTO,
-      ...ocs.map((o) => o.procedimientoTipo).filter(Boolean),
-    ])].sort((a, b) => a.localeCompare(b, 'es')),
+    procedimientos: [...new Set(ocs.map((o) => o.procedimientoTipo).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, 'es')),
     secretarias: [...new Set(ocs.map((o) => o.secretaria))].sort(),
   }), [ocs]);
 

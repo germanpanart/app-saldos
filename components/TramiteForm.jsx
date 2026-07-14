@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Trash2, Save, ArrowLeft, Loader2, AlertTriangle } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client.js';
 import { parseMonto, fmtARS, displaySecretaria, SECRETARIA_NOMBRE, montoPagadoSaldo } from '@/lib/format.js';
-import { TIPOS_PROCEDIMIENTO, inferArea } from '@/lib/labels.js';
+import { TIPOS_PROCEDIMIENTO, inferArea, normalizeProcedimientoTipo } from '@/lib/labels.js';
 import Combobox from './Combobox.jsx';
 import proveedoresCatalog from '@/data/proveedores.json';
 
@@ -99,7 +99,7 @@ export default function TramiteForm({ initial, pagosInitial, lookups }) {
         ensureLookup(supabase, 'rubros', f.rubro),
       ]);
       const row = {
-        tipo: (f.procedimiento || '').trim() || null,
+        tipo: normalizeProcedimientoTipo(f.procedimiento) || null,
         area: resolveArea(),
         secretaria_id, proveedor_id, rubro_id,
         nro_item: f.nro_item || null,
