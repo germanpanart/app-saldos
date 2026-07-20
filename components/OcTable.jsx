@@ -46,7 +46,8 @@ function Row({ oc, editable }) {
   const saldoColor = oc.estadoSaldo === 'pagada' ? 'text-emerald-600'
     : (oc.estadoSaldo === 'revisar' || oc.estadoSaldo === 'sobrepago') ? 'text-rose-600' : 'text-slate-900';
   const rowBg = open ? 'bg-brand-50' : 'bg-white';
-  const nro = oc.procedimientoNro || oc.tramiteNro || '—';
+  // Solo N° ítem; nunca SP ni otros números
+  const nro = (oc.procedimientoNro || oc.item || '').trim() || '—';
   return (
     <>
       <tr
@@ -176,7 +177,7 @@ export default function OcTable({ ocs, editable = false }) {
               <th className="px-2 py-2.5 w-14 sticky left-0 z-[2] bg-slate-50"></th>
               {th('ocNum', 'OC N°', 'sticky left-10 z-[2] bg-slate-50')}
               {th('procedimiento', 'Procedimiento')}
-              {th('procedimientoNro', 'N°')}
+              {th('procedimientoNro', 'N° ítem')}
               {th('secretaria', 'Secretaría')}
               <th className="px-3 py-2.5 font-semibold text-slate-500">Descripción</th>
               {th('ocMonto', 'Monto OC', 'text-right')}
