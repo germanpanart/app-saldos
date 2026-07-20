@@ -45,13 +45,32 @@ function Row({ oc, editable }) {
   const [open, setOpen] = useState(false);
   const saldoColor = oc.estadoSaldo === 'pagada' ? 'text-emerald-600'
     : (oc.estadoSaldo === 'revisar' || oc.estadoSaldo === 'sobrepago') ? 'text-rose-600' : 'text-slate-900';
+  const rowBg = open ? 'bg-brand-50' : 'bg-white';
+  const nro = oc.procedimientoNro || oc.tramiteNro || '—';
   return (
     <>
-      <tr className={`border-b border-slate-100 hover:bg-brand-50/40 cursor-pointer ${open ? 'bg-brand-50/60' : ''}`} onClick={() => setOpen((o) => !o)}>
-        <td className="px-2 py-2.5 text-slate-300">{open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</td>
-        <td className="px-2 py-2.5 font-semibold text-slate-700 whitespace-nowrap">{oc.ocNum}</td>
+      <tr
+        className={`border-b border-slate-100 hover:bg-brand-50/40 cursor-pointer ${open ? 'bg-brand-50/60' : ''}`}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <td className={`px-2 py-2.5 sticky left-0 z-[1] ${rowBg}`}>
+          <div className="flex items-center gap-1">
+            <span className="text-slate-300">{open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
+            {editable && oc.id && (
+              <Link
+                href={`/tramites/${oc.id}`}
+                onClick={(e) => e.stopPropagation()}
+                title="Editar trámite"
+                className="p-1 rounded text-brand-600 hover:bg-brand-100 hover:text-brand-800"
+              >
+                <Pencil size={14} />
+              </Link>
+            )}
+          </div>
+        </td>
+        <td className={`px-2 py-2.5 font-semibold text-slate-700 whitespace-nowrap sticky left-10 z-[1] ${rowBg}`}>{oc.ocNum}</td>
         <td className="px-2 py-2.5 text-slate-600 max-w-[160px] truncate" title={oc.procedimiento}>{oc.procedimiento || '—'}</td>
-        <td className="px-2 py-2.5 text-slate-600 whitespace-nowrap tabular-nums">{oc.procedimientoNro || '—'}</td>
+        <td className="px-2 py-2.5 text-slate-600 whitespace-nowrap tabular-nums" title={nro}>{nro}</td>
         <td className="px-2 py-2.5 text-slate-600 max-w-[220px] truncate" title={oc.secretaria}>{oc.secretaria}</td>
         <td className="px-2 py-2.5 text-slate-600 max-w-[280px] truncate" title={oc.descripcion}>{oc.descripcion || '—'}</td>
         <td className="px-3 py-2.5 text-right tabular-nums whitespace-nowrap text-slate-700">{fmtARS(oc.ocMonto)}</td>
@@ -66,10 +85,7 @@ function Row({ oc, editable }) {
       {open && (
         <tr className="bg-slate-50/80">
           <td colSpan={11} className="px-4 py-4">
-            <div className="flex items-center justify-between gap-3 mb-3 pb-2 border-b border-slate-200">
-              <div className="text-sm font-semibold text-slate-700 truncate">
-                OC {oc.ocNum} · {oc.descripcion || 'Sin descripción'}
-              </div>
+            <div className="flex flex-wrap items-center gap-3 mb-3 pb-2 border-b border-slate-200">
               {editable && oc.id && (
                 <Link
                   href={`/tramites/${oc.id}`}
@@ -79,6 +95,9 @@ function Row({ oc, editable }) {
                   <Pencil size={14} /> Editar trámite
                 </Link>
               )}
+              <div className="text-sm font-semibold text-slate-700 truncate min-w-0">
+                OC {oc.ocNum} · {oc.descripcion || 'Sin descripción'}
+              </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <Chip label="Monto OC" value={fmtARS(oc.ocMonto)} tone="blue" />
@@ -154,8 +173,8 @@ export default function OcTable({ ocs, editable = false }) {
         <table className="w-full text-sm">
           <thead className="bg-slate-50 text-xs uppercase tracking-wide border-b border-slate-200 sticky top-0 z-10">
             <tr>
-              <th className="px-2 py-2.5 w-6"></th>
-              {th('ocNum', 'OC N°')}
+              <th className="px-2 py-2.5 w-14 sticky left-0 z-[2] bg-slate-50"></th>
+              {th('ocNum', 'OC N°', 'sticky left-10 z-[2] bg-slate-50')}
               {th('procedimiento', 'Procedimiento')}
               {th('procedimientoNro', 'N°')}
               {th('secretaria', 'Secretaría')}
